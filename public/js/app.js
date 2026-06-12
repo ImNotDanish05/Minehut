@@ -311,7 +311,7 @@ async function loadServersData() {
     activateOfflineMode();
   }
 
-  populateCategoryDropdown();
+  populateFilterDropdowns();
   renderFilteredServers();
 }
 
@@ -320,26 +320,53 @@ function showLoadingSkeletons() {
   els.serversGrid.innerHTML = Array(6).fill('<div class="skeleton-card"></div>').join('');
 }
 
-// Collect unique categories across all loaded servers to fill filter list
-function populateCategoryDropdown() {
+// Dynamically populate Category, Platform, and Plan dropdowns based on API data
+function populateFilterDropdowns() {
   const categories = new Set();
-  state.servers.forEach(server => {
-    if (server.allCategories && Array.isArray(server.allCategories)) {
-      server.allCategories.forEach(cat => {
+  const plans = new Set();
+
+  state.servers.forEach(srv => {
+    // Categories
+    if (srv.allCategories && Array.isArray(srv.allCategories)) {
+      srv.allCategories.forEach(cat => {
         if (cat) categories.add(cat.toLowerCase());
       });
     }
+
+    // Get unique plans from servers data
+    const plan = srv.staticInfo && srv.staticInfo.serverPlan ? srv.staticInfo.serverPlan : '';
+    if (plan) {
+      if (plan.toLowerCase().startsWith('custom plan') || plan.toLowerCase().includes('custom')) {
+        plans.add('Custom Plan');
+      } else {
+        plans.add(plan);
+      }
+    }
   });
 
-  // Clear except first default option
+  // Render Categories Dropdown
   els.categorySelect.innerHTML = '<option value="all">All Categories</option>';
-  
-  // Sort alphabetically and append options
   Array.from(categories).sort().forEach(cat => {
     const opt = document.createElement('option');
     opt.value = cat;
     opt.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
     els.categorySelect.appendChild(opt);
+  });
+
+  // Render Platforms Dropdown (Always show Java and Bedrock Edition options)
+  els.platformSelect.innerHTML = `
+    <option value="all">All Platforms</option>
+    <option value="java">Java Edition</option>
+    <option value="bedrock">Bedrock Edition</option>
+  `;
+
+  // Render Plans Dropdown (Dynamically populate from discovered plan list)
+  els.planSelect.innerHTML = '<option value="all">All Plans</option>';
+  Array.from(plans).sort().forEach(planName => {
+    const opt = document.createElement('option');
+    opt.value = planName.toLowerCase();
+    opt.textContent = planName;
+    els.planSelect.appendChild(opt);
   });
 }
 
@@ -377,14 +404,10 @@ function renderFilteredServers() {
   if (state.filters.plan !== 'all') {
     filtered = filtered.filter(srv => {
       const plan = srv.staticInfo && srv.staticInfo.serverPlan ? srv.staticInfo.serverPlan.toLowerCase() : '';
-      if (state.filters.plan === 'free') {
-        return plan === 'free' || plan === 'starter';
-      } else if (state.filters.plan === 'paid') {
-        return plan === 'pro' || plan === 'ultra' || plan === 'custom' || plan === 'vip';
-      } else if (state.filters.plan === 'external') {
-        return plan === 'external server' || plan === 'external';
+      if (state.filters.plan === 'custom plan') {
+        return plan.startsWith('custom plan') || plan.includes('custom');
       }
-      return true;
+      return plan === state.filters.plan;
     });
   }
 
@@ -446,7 +469,9 @@ function createServerCard(server) {
 
   // Render Icon
   let iconHtml = '';
-  if (server.icon) {
+  if (server.server_list_favicon) {
+    iconHtml = `<img src="${server.server_list_favicon}" alt="Favicon" style="width: 100%; height: 100%; object-fit: contain; border-radius: var(--border-radius-sm); padding: 4px;" />`;
+  } else if (server.icon) {
     // Show standard icon mapping or character initial
     const formattedIcon = server.icon.replace(/_/g, ' ');
     // Get emoji/symbol or just initial depending on what minecraft item it is
@@ -482,6 +507,9 @@ function createServerCard(server) {
   } else if (plan.includes('external')) {
     planBadgeClass = 'badge-plan-external';
     planLabel = 'EXTERNAL';
+  } else if (plan.startsWith('custom plan') || plan.includes('custom')) {
+    planBadgeClass = 'badge-plan-custom';
+    planLabel = 'CUSTOM';
   }
 
   // Author Rank Badge (optional)

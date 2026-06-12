@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Minehut Server Search Engine - Discover Premium Minecraft Servers</title>
-  <meta name="description" content="Search, filter, and discover the best Minecraft servers on the Minehut network. Live statistics, advanced filtering, and instant connection details.">
+  <meta name="description"
+    content="Search, filter, and discover the best Minecraft servers on the Minehut network. Live statistics, advanced filtering, and instant connection details.">
   <link rel="stylesheet" href="public/css/style.css">
   <link rel="shortcut icon" href="https://minehut.com/favicon.ico" type="image/x-icon">
 </head>
+
 <body>
 
   <!-- Top Sticky Header -->
@@ -17,7 +20,7 @@
         <div class="logo-icon">M</div>
         <div class="logo-text">Minehut Search</div>
       </a>
-      
+
       <!-- Network Stats Dashboard -->
       <div class="network-stats" id="network-stats-panel">
         <div class="stat-item">
@@ -44,17 +47,27 @@
     <!-- Hero / Title -->
     <section class="hero-section">
       <h1 class="hero-title">Find Your Next <span>Minehut Server</span></h1>
-      <p class="hero-subtitle">Instantly browse through thousands of community-hosted Minecraft servers. Filter by category, player count, platform, and online status.</p>
-      
+      <p class="hero-subtitle">Instantly browse through thousands of community-hosted Minecraft servers. Filter by
+        category, player count, platform, and online status.</p>
+
       <!-- Search Input Container -->
       <div class="search-wrapper">
         <div class="search-container">
-          <input type="text" id="search-input" class="search-input" placeholder="Search servers by name, author, categories, or keywords..." autocomplete="off">
+          <input type="text" id="search-input" class="search-input"
+            placeholder="Search servers by name, author, categories, or keywords..." autocomplete="off">
           <button class="search-icon-btn" id="search-clear-btn" style="display: none;" title="Clear search">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
           </button>
           <div class="search-icon-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
           </div>
         </div>
       </div>
@@ -89,8 +102,7 @@
           <label class="filter-label" for="platform-select">Platform</label>
           <select id="platform-select" class="custom-select">
             <option value="all">All Platforms</option>
-            <option value="java">Java Edition</option>
-            <option value="bedrock">Bedrock Edition</option>
+            <!-- Dynamically populated -->
           </select>
         </div>
 
@@ -99,9 +111,7 @@
           <label class="filter-label" for="plan-select">Server Plan</label>
           <select id="plan-select" class="custom-select">
             <option value="all">All Plans</option>
-            <option value="free">Free Plans</option>
-            <option value="paid">Paid Plans (Pro/Ultra)</option>
-            <option value="external">External Server</option>
+            <!-- Dynamically populated -->
           </select>
         </div>
 
@@ -147,10 +157,12 @@
   </main>
 
   <!-- Global Footer -->
-  <footer style="margin-top: 60px; padding: 40px 0; border-top: 1px solid var(--border-color); text-align: center; color: var(--text-muted); font-size: 14px;">
+  <footer
+    style="margin-top: 60px; padding: 40px 0; border-top: 1px solid var(--border-color); text-align: center; color: var(--text-muted); font-size: 14px;">
     <div class="container">
       <p>&copy; 2026 Minehut Search Engine. Powered by the Minehut Public API.</p>
-      <p style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">This search tool is unaffiliated with Minehut, Minecraft, or Mojang Synergies AB.</p>
+      <p style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">This search tool is unaffiliated with
+        Minehut, Minecraft, or Mojang Synergies AB.</p>
     </div>
   </footer>
 
@@ -167,4 +179,5 @@
   <script src="public/js/mock_data.js"></script>
   <script src="public/js/app.js"></script>
 </body>
+
 </html>
