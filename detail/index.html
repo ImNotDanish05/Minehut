@@ -107,8 +107,63 @@
             <span class="dash-value" id="stat-owner">...</span>
           </div>
           <div class="dash-card">
-            <span class="dash-label">Owner ID</span>
+            <span class="dash-label">Minehut Owner ID</span>
             <span class="dash-value" id="stat-owner-id" style="font-size: 13px; font-family: var(--font-mono); word-break: break-all;">...</span>
+          </div>
+          <div class="dash-card" id="card-mc-uuid" style="display: none;">
+            <span class="dash-label">Minecraft UUID</span>
+            <span class="dash-value" id="stat-mc-uuid" style="font-size: 13px; font-family: var(--font-mono); word-break: break-all;">...</span>
+          </div>
+        </section>
+
+        <!-- Plan Specifications Card -->
+        <section class="plan-specs-section" id="plan-specs-section">
+          <h2 class="detail-section-title">Server Hosting Plan Details</h2>
+          <div class="plan-specs-card">
+            <div class="plan-specs-header">
+              <div class="plan-badge-large badge badge-plan-free" id="plan-spec-badge">Starter</div>
+              <div class="plan-price-info">
+                <span class="plan-cost-label">Hosting Cost</span>
+                <span class="plan-cost-value" id="plan-spec-cost">0 Credits / Day</span>
+              </div>
+            </div>
+            <div class="plan-specs-grid">
+              <div class="spec-feature-item">
+                <span class="spec-feature-icon">👥</span>
+                <div class="spec-feature-text">
+                  <span class="spec-feature-label">Max Players</span>
+                  <span class="spec-feature-val" id="plan-spec-players">10 Players</span>
+                </div>
+              </div>
+              <div class="spec-feature-item">
+                <span class="spec-feature-icon">💾</span>
+                <div class="spec-feature-text">
+                  <span class="spec-feature-label">Allocated RAM</span>
+                  <span class="spec-feature-val" id="plan-spec-ram">1 GB RAM</span>
+                </div>
+              </div>
+              <div class="spec-feature-item">
+                <span class="spec-feature-icon">🛡️</span>
+                <div class="spec-feature-text">
+                  <span class="spec-feature-label">Server Tier</span>
+                  <span class="spec-feature-val" id="plan-spec-tier">Basic Server</span>
+                </div>
+              </div>
+              <div class="spec-feature-item">
+                <span class="spec-feature-icon">☁️</span>
+                <div class="spec-feature-text">
+                  <span class="spec-feature-label">Backup Limits</span>
+                  <span class="spec-feature-val" id="plan-spec-backups">4 hours / day</span>
+                </div>
+              </div>
+              <div class="spec-feature-item">
+                <span class="spec-feature-icon">🔗</span>
+                <div class="spec-feature-text">
+                  <span class="spec-feature-label">Connected Links</span>
+                  <span class="spec-feature-val" id="plan-spec-connected">None</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

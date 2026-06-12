@@ -357,8 +357,11 @@ function populateFilterDropdowns() {
     // Get unique plans from servers data
     const plan = srv.staticInfo && srv.staticInfo.serverPlan ? srv.staticInfo.serverPlan : '';
     if (plan) {
-      if (plan.toLowerCase().startsWith('custom plan') || plan.toLowerCase().includes('custom')) {
+      const planLower = plan.toLowerCase();
+      if (planLower.startsWith('custom plan') || planLower.includes('custom')) {
         plans.add('Custom Plan');
+      } else if (planLower === 'starter' || planLower === 'free') {
+        plans.add('Free');
       } else {
         plans.add(plan);
       }
@@ -427,6 +430,9 @@ function renderFilteredServers() {
       const plan = srv.staticInfo && srv.staticInfo.serverPlan ? srv.staticInfo.serverPlan.toLowerCase() : '';
       if (state.filters.plan === 'custom plan') {
         return plan.startsWith('custom plan') || plan.includes('custom');
+      }
+      if (state.filters.plan === 'free') {
+        return plan === 'free' || plan === 'starter';
       }
       return plan === state.filters.plan;
     });
@@ -619,6 +625,34 @@ function renderPaginationControls(totalPages) {
   });
 }
 
+// Get normalized plan badge label and visual CSS class
+function getPlanBadgeInfo(planString) {
+  if (!planString) return { label: 'FREE', className: 'badge-plan-free' };
+  
+  const lower = planString.toLowerCase().replace(/_/g, ' ').trim();
+  
+  if (lower.startsWith('custom') || lower.includes('custom')) {
+    return { label: 'CUSTOM', className: 'badge-plan-custom' };
+  }
+  if (lower.includes('external')) {
+    return { label: 'EXTERNAL', className: 'badge-plan-external' };
+  }
+  if (lower.includes('pro')) {
+    return { label: lower.includes('yearly') ? 'PRO (Y)' : 'PRO', className: 'badge-plan-pro' };
+  }
+  if (lower.includes('ultimate')) {
+    return { label: lower.includes('yearly') ? 'ULTIMATE (Y)' : 'ULTIMATE', className: 'badge-plan-ultimate' };
+  }
+  if (lower.includes('standard')) {
+    return { label: lower.includes('yearly') ? 'STANDARD (Y)' : 'STANDARD', className: 'badge-plan-standard' };
+  }
+  if (lower.includes('ultra')) {
+    return { label: 'ULTRA', className: 'badge-plan-ultra' };
+  }
+  
+  return { label: 'FREE', className: 'badge-plan-free' };
+}
+
 // Create Card Elements dynamically
 function createServerCard(server) {
   const card = document.createElement('div');
@@ -652,23 +686,8 @@ function createServerCard(server) {
   }
 
   // Server Plan Badge
-  const plan = server.staticInfo && server.staticInfo.serverPlan ? server.staticInfo.serverPlan.toLowerCase() : 'free';
-  let planBadgeClass = 'badge-plan-free';
-  let planLabel = 'FREE';
-
-  if (plan.includes('pro')) {
-    planBadgeClass = 'badge-plan-pro';
-    planLabel = 'PRO';
-  } else if (plan.includes('ultra')) {
-    planBadgeClass = 'badge-plan-ultra';
-    planLabel = 'ULTRA';
-  } else if (plan.includes('external')) {
-    planBadgeClass = 'badge-plan-external';
-    planLabel = 'EXTERNAL';
-  } else if (plan.startsWith('custom plan') || plan.includes('custom')) {
-    planBadgeClass = 'badge-plan-custom';
-    planLabel = 'CUSTOM';
-  }
+  const rawPlanString = server.staticInfo && server.staticInfo.serverPlan ? server.staticInfo.serverPlan : 'free';
+  const planInfo = getPlanBadgeInfo(rawPlanString);
 
   // Owner username
   const ownerName = server.author || 'Unknown';
@@ -712,7 +731,7 @@ function createServerCard(server) {
           <div class="server-name">${server.name || 'Minehut Server'}</div>
           <div class="server-owner">by <span class="owner-name">${ownerName}</span> ${rankBadgeHtml}</div>
           <div class="server-meta">
-            <span class="badge ${planBadgeClass}">${planLabel}</span>
+            <span class="badge ${planInfo.className}">${planInfo.label}</span>
             <span class="platform-tag">${platform}</span>
           </div>
         </div>

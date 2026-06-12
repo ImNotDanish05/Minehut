@@ -163,7 +163,17 @@ const els = {
   pluginsList: document.getElementById('plugins-list'),
   toast: document.getElementById('toast-notification'),
   toastTitle: document.getElementById('toast-title'),
-  toastDesc: document.getElementById('toast-desc')
+  toastDesc: document.getElementById('toast-desc'),
+  
+  // Plan specs elements
+  planSpecBadge: document.getElementById('plan-spec-badge'),
+  planSpecCost: document.getElementById('plan-spec-cost'),
+  planSpecPlayers: document.getElementById('plan-spec-players'),
+  planSpecRam: document.getElementById('plan-spec-ram'),
+  planSpecTier: document.getElementById('plan-spec-tier'),
+  planSpecBackups: document.getElementById('plan-spec-backups'),
+  planSpecConnected: document.getElementById('plan-spec-connected'),
+  planSpecCard: document.querySelector('.plan-specs-card')
 };
 
 // Initialize Page Load
@@ -177,8 +187,69 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  // 1. Load initial server details
   await loadServerDetails(serverName);
+
+  // 2. Resolve Minecraft UUID once in background (non-blocking)
+  resolveMinecraftUUID(window.currentOwner).then(uuid => {
+    if (uuid) {
+      window.currentOwnerUUID = uuid;
+      // Update the avatar image to use the UUID (more reliable than username for skins)
+      const avatarEl = document.querySelector('.owner-avatar');
+      if (avatarEl) {
+        avatarEl.src = `https://crafthead.net/avatar/${uuid}`;
+      }
+      const dashAvatarEl = document.querySelector('.dash-owner-avatar');
+      if (dashAvatarEl) {
+        dashAvatarEl.src = `https://crafthead.net/avatar/${uuid}`;
+      }
+      
+      // Update Minecraft UUID card
+      const mcUuidCard = document.getElementById('card-mc-uuid');
+      const mcUuidVal = document.getElementById('stat-mc-uuid');
+      if (mcUuidCard && mcUuidVal) {
+        mcUuidVal.textContent = uuid;
+        mcUuidCard.style.display = 'flex'; // show the card
+      }
+    }
+  });
+
+  // 3. Setup background auto-refresh every 5 seconds for Minehut API stats
+  setInterval(async () => {
+    await updateServerDetailsLive(serverName);
+  }, 5000);
 });
+
+// Resolve Minecraft UUID from username (using CORS-friendly PlayerDB with Mojang fallback)
+async function resolveMinecraftUUID(username) {
+  if (!username || username === 'Unknown') return null;
+  
+  try {
+    // 1. Try PlayerDB first as it has CORS enabled
+    const res = await fetch(`https://playerdb.co/api/player/minecraft/${encodeURIComponent(username)}`);
+    if (res.ok) {
+      const body = await res.json();
+      if (body.success && body.data && body.data.player) {
+        return body.data.player.raw_id || body.data.player.id;
+      }
+    }
+  } catch (e) {
+    console.warn("PlayerDB lookup failed, trying Mojang direct:", e);
+  }
+  
+  try {
+    // 2. Try Mojang direct (if run in environment bypassing CORS)
+    const res = await fetch(`https://api.mojang.com/users/profiles/minecraft/${encodeURIComponent(username)}`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.id;
+    }
+  } catch (e) {
+    console.warn("Mojang direct lookup failed:", e);
+  }
+  
+  return null;
+}
 
 // Load details of a specific server
 async function loadServerDetails(name) {
@@ -202,6 +273,8 @@ async function loadServerDetails(name) {
 
   window.currentOwner = ownerName || 'Unknown';
   window.currentRank = ownerRank || 'DEFAULT';
+
+
 
   try {
     const res = await fetch(`https://api.minehut.com/server/${encodeURIComponent(name)}?byName=true`);
@@ -230,6 +303,56 @@ async function loadServerDetails(name) {
   }
 }
 
+// Asynchronously update server stats from the Minehut API every 5 seconds
+async function updateServerDetailsLive(name) {
+  try {
+    const res = await fetch(`https://api.minehut.com/server/${encodeURIComponent(name)}?byName=true`);
+    if (!res.ok) throw new Error('Live Update Fetch Failed');
+    const data = await res.json();
+    if (data && data.server) {
+      renderServerDetails(data.server);
+      
+      // Retain resolved Minecraft UUID avatar if we have it
+      if (window.currentOwnerUUID) {
+        const avatarEl = document.querySelector('.owner-avatar');
+        if (avatarEl) avatarEl.src = `https://crafthead.net/avatar/${window.currentOwnerUUID}`;
+        const dashAvatarEl = document.querySelector('.dash-owner-avatar');
+        if (dashAvatarEl) dashAvatarEl.src = `https://crafthead.net/avatar/${window.currentOwnerUUID}`;
+      }
+    }
+  } catch (err) {
+    console.debug('Background live update polling failed (likely CORS or offline):', err);
+  }
+}
+
+// Get normalized plan badge label and visual CSS class
+function getPlanBadgeInfo(planString) {
+  if (!planString) return { label: 'FREE', className: 'badge-plan-free' };
+  
+  const lower = planString.toLowerCase().replace(/_/g, ' ').trim();
+  
+  if (lower.startsWith('custom') || lower.includes('custom')) {
+    return { label: 'CUSTOM', className: 'badge-plan-custom' };
+  }
+  if (lower.includes('external')) {
+    return { label: 'EXTERNAL', className: 'badge-plan-external' };
+  }
+  if (lower.includes('pro')) {
+    return { label: lower.includes('yearly') ? 'PRO (Y)' : 'PRO', className: 'badge-plan-pro' };
+  }
+  if (lower.includes('ultimate')) {
+    return { label: lower.includes('yearly') ? 'ULTIMATE (Y)' : 'ULTIMATE', className: 'badge-plan-ultimate' };
+  }
+  if (lower.includes('standard')) {
+    return { label: lower.includes('yearly') ? 'STANDARD (Y)' : 'STANDARD', className: 'badge-plan-standard' };
+  }
+  if (lower.includes('ultra')) {
+    return { label: 'ULTRA', className: 'badge-plan-ultra' };
+  }
+  
+  return { label: 'FREE', className: 'badge-plan-free' };
+}
+
 // Render server data to DOM
 function renderServerDetails(server) {
   // 1. Setup Banner Color / Image
@@ -256,8 +379,15 @@ function renderServerDetails(server) {
     if (rank.includes('PRO')) rankClass = 'badge-rank-pro';
     rankBadgeHtml = `<span class="badge ${rankClass}" style="margin-left: 6px;">${rank}</span>`;
   }
-  els.detailServerOwner.innerHTML = `by <span style="font-weight: 700; color: var(--text-primary);">${window.currentOwner}</span> ${rankBadgeHtml}`;
+  const avatarUrl = `https://crafthead.net/avatar/${encodeURIComponent(window.currentOwner)}`;
+  els.detailServerOwner.innerHTML = `
+    <img src="${avatarUrl}" alt="${window.currentOwner}" class="owner-avatar" style="width: 22px; height: 22px; border-radius: 4px; object-fit: cover; border: 1px solid var(--border-color);" />
+    by <span style="font-weight: 700; color: var(--text-primary);">${window.currentOwner}</span> ${rankBadgeHtml}
+  `;
   
+  // Clear existing badges to prevent duplication on auto-refresh updates
+  els.metaTags.innerHTML = '';
+
   // Status Badge
   const isOnline = server.online || server.playerCount > 0;
   const statusBadge = document.createElement('span');
@@ -268,14 +398,11 @@ function renderServerDetails(server) {
   els.metaTags.appendChild(statusBadge);
 
   // Plan Badge
-  const plan = server.server_plan ? server.server_plan.toLowerCase() : 'free';
+  const activePlan = server.server_plan || server.activeServerPlan || 'FREE';
+  const planInfo = getPlanBadgeInfo(activePlan);
   const planBadge = document.createElement('span');
-  let planClass = 'badge-plan-free';
-  if (plan.includes('pro')) planClass = 'badge-plan-pro';
-  if (plan.includes('ultra')) planClass = 'badge-plan-ultra';
-  if (plan.includes('external')) planClass = 'badge-plan-external';
-  planBadge.className = `badge ${planClass}`;
-  planBadge.textContent = plan.toUpperCase();
+  planBadge.className = `badge ${planInfo.className}`;
+  planBadge.textContent = planInfo.label;
   els.metaTags.appendChild(planBadge);
 
   // Platform Badge
@@ -360,7 +487,12 @@ function renderServerDetails(server) {
   els.statDailyUptime.textContent = `${uptimePercent}% Uptime`;
   
   // Populate Owner Stats
-  els.statOwner.textContent = window.currentOwner;
+  els.statOwner.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <img src="${avatarUrl}" class="dash-owner-avatar" style="width: 24px; height: 24px; border-radius: 4px; object-fit: cover; border: 1px solid var(--border-color);" />
+      <span>${window.currentOwner}</span>
+    </div>
+  `;
   els.statOwnerId.textContent = server.owner || 'N/A';
 
   // 7. Categories pills
@@ -390,6 +522,188 @@ function renderServerDetails(server) {
       els.pluginsList.appendChild(pTag);
     });
   }
+
+  // 9. Update Plan Specifications Card
+  const specs = getPlanSpecs(activePlan);
+  
+  if (els.planSpecBadge) {
+    els.planSpecBadge.textContent = specs.shortName;
+    els.planSpecBadge.className = `plan-badge-large badge ${planInfo.className}`;
+  }
+  if (els.planSpecCost) els.planSpecCost.textContent = specs.cost;
+  if (els.planSpecPlayers) els.planSpecPlayers.textContent = specs.players;
+  if (els.planSpecRam) els.planSpecRam.textContent = specs.ram;
+  if (els.planSpecTier) els.planSpecTier.textContent = specs.tier;
+  if (els.planSpecBackups) els.planSpecBackups.textContent = specs.backups;
+  if (els.planSpecConnected) els.planSpecConnected.textContent = specs.connected;
+  
+  if (els.planSpecCard) {
+    els.planSpecCard.style.boxShadow = `0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px ${specs.themeGlow}`;
+    els.planSpecCard.style.borderColor = specs.themeBorder;
+  }
+}
+
+// Plan resource specifications definitions
+const PLAN_SPECS = {
+  starter: {
+    name: "Starter (Free)",
+    shortName: "Starter",
+    cost: "0 Credits / Day (Free)",
+    players: "10 Players",
+    ram: "1 GB RAM",
+    tier: "Basic Server",
+    backups: "4 hours / day backups",
+    connected: "None",
+    themeGlow: "rgba(113, 113, 122, 0.15)",
+    themeBorder: "rgba(113, 113, 122, 0.3)"
+  },
+  free: {
+    name: "Starter (Free)",
+    shortName: "Starter",
+    cost: "0 Credits / Day (Free)",
+    players: "10 Players",
+    ram: "1 GB RAM",
+    tier: "Basic Server",
+    backups: "4 hours / day backups",
+    connected: "None",
+    themeGlow: "rgba(113, 113, 122, 0.15)",
+    themeBorder: "rgba(113, 113, 122, 0.3)"
+  },
+  standard: {
+    name: "Standard Plan",
+    shortName: "Standard",
+    cost: "600 Credits / Month (6,000 / Year)",
+    players: "Unlimited Players",
+    ram: "2 GB RAM",
+    tier: "Standard Server",
+    backups: "Unlimited Backups",
+    connected: "1 Server Link",
+    themeGlow: "rgba(6, 182, 212, 0.15)",
+    themeBorder: "rgba(6, 182, 212, 0.3)"
+  },
+  "yearly standard": {
+    name: "Standard Plan (Yearly)",
+    shortName: "Standard",
+    cost: "6,000 Credits / Year (2 Months Free!)",
+    players: "Unlimited Players",
+    ram: "2 GB RAM",
+    tier: "Standard Server",
+    backups: "Unlimited Backups",
+    connected: "1 Server Link",
+    themeGlow: "rgba(6, 182, 212, 0.15)",
+    themeBorder: "rgba(6, 182, 212, 0.3)"
+  },
+  pro: {
+    name: "Pro Plan",
+    shortName: "Pro",
+    cost: "1,800 Credits / Month (18,000 / Year)",
+    players: "Unlimited Players",
+    ram: "6 GB RAM",
+    tier: "Standard Server",
+    backups: "Unlimited Backups",
+    connected: "3 Server Links",
+    themeGlow: "rgba(139, 92, 246, 0.15)",
+    themeBorder: "rgba(139, 92, 246, 0.3)"
+  },
+  "yearly pro": {
+    name: "Pro Plan (Yearly)",
+    shortName: "Pro",
+    cost: "18,000 Credits / Year (2 Months Free!)",
+    players: "Unlimited Players",
+    ram: "6 GB RAM",
+    tier: "Standard Server",
+    backups: "Unlimited Backups",
+    connected: "3 Server Links",
+    themeGlow: "rgba(139, 92, 246, 0.15)",
+    themeBorder: "rgba(139, 92, 246, 0.3)"
+  },
+  ultimate: {
+    name: "Ultimate Plan",
+    shortName: "Ultimate",
+    cost: "6,000 Credits / Month (60,000 / Year)",
+    players: "Unlimited Players",
+    ram: "14 GB RAM",
+    tier: "Pro Server",
+    backups: "Online 24/7 Uptime",
+    connected: "6 Server Links",
+    themeGlow: "rgba(239, 68, 68, 0.15)",
+    themeBorder: "rgba(239, 68, 68, 0.3)"
+  },
+  "yearly ultimate": {
+    name: "Ultimate Plan (Yearly)",
+    shortName: "Ultimate",
+    cost: "60,000 Credits / Year (2 Months Free!)",
+    players: "Unlimited Players",
+    ram: "14 GB RAM",
+    tier: "Pro Server",
+    backups: "Online 24/7 Uptime",
+    connected: "6 Server Links",
+    themeGlow: "rgba(239, 68, 68, 0.15)",
+    themeBorder: "rgba(239, 68, 68, 0.3)"
+  },
+  external: {
+    name: "External Server",
+    shortName: "External",
+    cost: "Direct Connected / External",
+    players: "Unlimited Players",
+    ram: "Custom RAM (Self-hosted)",
+    tier: "External Server Node",
+    backups: "Self-Managed Backups",
+    connected: "Direct Connection Link",
+    themeGlow: "rgba(16, 185, 129, 0.15)",
+    themeBorder: "rgba(16, 185, 129, 0.3)"
+  },
+  "external server": {
+    name: "External Server",
+    shortName: "External",
+    cost: "Direct Connected / External",
+    players: "Unlimited Players",
+    ram: "Custom RAM (Self-hosted)",
+    tier: "External Server Node",
+    backups: "Self-Managed Backups",
+    connected: "Direct Connection Link",
+    themeGlow: "rgba(16, 185, 129, 0.15)",
+    themeBorder: "rgba(16, 185, 129, 0.3)"
+  },
+  custom: {
+    name: "Custom Plan",
+    shortName: "Custom",
+    cost: "Starts at 600 Credits / Month",
+    players: "Unlimited Players",
+    ram: "Up to 32 GB RAM",
+    tier: "Standard or Pro Server",
+    backups: "Unlimited or 24/7 Uptime",
+    connected: "1 Server Link",
+    themeGlow: "rgba(245, 158, 11, 0.15)",
+    themeBorder: "rgba(245, 158, 11, 0.3)"
+  }
+};
+
+// Get plan specs helper function
+function getPlanSpecs(planString) {
+  if (!planString) return PLAN_SPECS.free;
+  
+  const lower = planString.toLowerCase().trim();
+  if (lower.startsWith('custom') || lower.includes('custom')) {
+    return PLAN_SPECS.custom;
+  }
+  if (PLAN_SPECS[lower]) {
+    return PLAN_SPECS[lower];
+  }
+  
+  // Default fallback
+  return {
+    name: planString.toUpperCase(),
+    shortName: planString.toUpperCase(),
+    cost: "Varies",
+    players: "Unlimited",
+    ram: "Custom",
+    tier: "Standard Server",
+    backups: "Unlimited Backups",
+    connected: "Varies",
+    themeGlow: "rgba(139, 92, 246, 0.15)",
+    themeBorder: "rgba(139, 92, 246, 0.3)"
+  };
 }
 
 // Render "Server Not Found" screen
