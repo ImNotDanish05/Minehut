@@ -569,6 +569,20 @@ header {
   text-overflow: ellipsis;
 }
 
+.server-owner {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.server-owner .owner-name {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
 .server-meta {
   display: flex;
   align-items: center;

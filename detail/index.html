@@ -37,6 +37,7 @@
           <div class="detail-icon" id="server-icon">🎮</div>
           <div class="detail-title-info">
             <h1 class="detail-server-name" id="server-name">Loading Server Details...</h1>
+            <div class="detail-server-owner" id="detail-server-owner" style="margin-top: 4px; display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--text-secondary);"></div>
             <div class="server-meta" style="margin-top: 8px;" id="server-meta-tags">
               <!-- Dynamically populated badges -->
             </div>
@@ -100,6 +101,14 @@
           <div class="dash-card">
             <span class="dash-label">Uptime Tier</span>
             <span class="dash-value" id="stat-daily-uptime">...</span>
+          </div>
+          <div class="dash-card">
+            <span class="dash-label">Server Owner</span>
+            <span class="dash-value" id="stat-owner">...</span>
+          </div>
+          <div class="dash-card">
+            <span class="dash-label">Owner ID</span>
+            <span class="dash-value" id="stat-owner-id" style="font-size: 13px; font-family: var(--font-mono); word-break: break-all;">...</span>
           </div>
         </section>
 

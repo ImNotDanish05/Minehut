@@ -138,6 +138,7 @@ const els = {
   banner: document.getElementById('server-banner'),
   serverIcon: document.getElementById('server-icon'),
   serverName: document.getElementById('server-name'),
+  detailServerOwner: document.getElementById('detail-server-owner'),
   metaTags: document.getElementById('server-meta-tags'),
   serverIp: document.getElementById('server-ip'),
   btnCopyIp: document.getElementById('btn-copy-ip'),
@@ -154,6 +155,8 @@ const els = {
   statCreated: document.getElementById('stat-created'),
   statJoins: document.getElementById('stat-joins'),
   statDailyUptime: document.getElementById('stat-daily-uptime'),
+  statOwner: document.getElementById('stat-owner'),
+  statOwnerId: document.getElementById('stat-owner-id'),
   
   categoriesList: document.getElementById('detail-categories'),
   pluginsSection: document.getElementById('plugins-section'),
@@ -181,6 +184,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadServerDetails(name) {
   let serverData = null;
   let isMocked = false;
+
+  // Resolve Owner username and rank from URL parameters or fallbacks
+  const urlParams = new URLSearchParams(window.location.search);
+  let ownerName = urlParams.get('owner');
+  let ownerRank = urlParams.get('rank');
+
+  if (!ownerName) {
+    const matched = window.MinehutMockData && window.MinehutMockData.servers 
+      ? window.MinehutMockData.servers.find(s => s.name.toLowerCase() === name.toLowerCase())
+      : null;
+    if (matched) {
+      ownerName = matched.author;
+      ownerRank = matched.authorRank;
+    }
+  }
+
+  window.currentOwner = ownerName || 'Unknown';
+  window.currentRank = ownerRank || 'DEFAULT';
 
   try {
     const res = await fetch(`https://api.minehut.com/server/${encodeURIComponent(name)}?byName=true`);
@@ -224,6 +245,18 @@ function renderServerDetails(server) {
 
   // 3. Set Name and Meta tags
   els.serverName.textContent = server.name;
+  
+  // Set Owner Subtitle in Header
+  let rankBadgeHtml = '';
+  if (window.currentRank && window.currentRank !== 'DEFAULT') {
+    const rank = window.currentRank.toUpperCase();
+    let rankClass = 'badge-rank-vip';
+    if (rank.includes('ADMIN')) rankClass = 'badge-rank-admin';
+    if (rank.includes('DEV')) rankClass = 'badge-rank-dev';
+    if (rank.includes('PRO')) rankClass = 'badge-rank-pro';
+    rankBadgeHtml = `<span class="badge ${rankClass}" style="margin-left: 6px;">${rank}</span>`;
+  }
+  els.detailServerOwner.innerHTML = `by <span style="font-weight: 700; color: var(--text-primary);">${window.currentOwner}</span> ${rankBadgeHtml}`;
   
   // Status Badge
   const isOnline = server.online || server.playerCount > 0;
@@ -325,6 +358,10 @@ function renderServerDetails(server) {
     }
   }
   els.statDailyUptime.textContent = `${uptimePercent}% Uptime`;
+  
+  // Populate Owner Stats
+  els.statOwner.textContent = window.currentOwner;
+  els.statOwnerId.textContent = server.owner || 'N/A';
 
   // 7. Categories pills
   const categories = server.categories || server.inheritedCategories || [];

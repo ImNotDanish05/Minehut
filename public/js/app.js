@@ -670,6 +670,9 @@ function createServerCard(server) {
     planLabel = 'CUSTOM';
   }
 
+  // Owner username
+  const ownerName = server.author || 'Unknown';
+
   // Author Rank Badge (optional)
   let rankBadgeHtml = '';
   if (server.authorRank && server.authorRank !== 'DEFAULT') {
@@ -707,9 +710,9 @@ function createServerCard(server) {
         <div class="server-icon">${iconHtml}</div>
         <div class="server-title-area">
           <div class="server-name">${server.name || 'Minehut Server'}</div>
+          <div class="server-owner">by <span class="owner-name">${ownerName}</span> ${rankBadgeHtml}</div>
           <div class="server-meta">
             <span class="badge ${planBadgeClass}">${planLabel}</span>
-            ${rankBadgeHtml}
             <span class="platform-tag">${platform}</span>
           </div>
         </div>
@@ -738,7 +741,12 @@ function createServerCard(server) {
 
   // Click handler to open details view
   card.addEventListener('click', () => {
-    window.location.href = `detail/index.html?name=${encodeURIComponent(server.name)}`;
+    const query = new URLSearchParams({
+      name: server.name,
+      owner: ownerName,
+      rank: server.authorRank || 'DEFAULT'
+    });
+    window.location.href = `detail/index.html?${query.toString()}`;
   });
 
   return card;
