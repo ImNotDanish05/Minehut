@@ -149,6 +149,8 @@ const els = {
   // Dashboard stats
   statUptime: document.getElementById('stat-uptime'),
   statSlots: document.getElementById('stat-slots'),
+  statSlotsRing: document.getElementById('stat-slots-ring'),
+  statSlotsPercent: document.getElementById('stat-slots-percent'),
   statPlan: document.getElementById('stat-plan'),
   statCredits: document.getElementById('stat-credits'),
   statVersion: document.getElementById('stat-version'),
@@ -186,6 +188,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.location.href = '../index.html';
     return;
   }
+
+  // Initialize player history array
+  window.playerHistory = [];
+  
+  // Draw initial empty/loading chart state
+  drawPlayerChart();
 
   // 1. Load initial server details
   await loadServerDetails(serverName);
@@ -297,6 +305,7 @@ async function loadServerDetails(name) {
   }
 
   renderServerDetails(serverData);
+  addToHistory(serverData.playerCount || 0);
 
   if (isMocked) {
     showFallbackToast();
@@ -311,6 +320,7 @@ async function updateServerDetailsLive(name) {
     const data = await res.json();
     if (data && data.server) {
       renderServerDetails(data.server);
+      addToHistory(data.server.playerCount || 0);
       
       // Retain resolved Minecraft UUID avatar if we have it
       if (window.currentOwnerUUID) {
@@ -322,6 +332,28 @@ async function updateServerDetailsLive(name) {
     }
   } catch (err) {
     console.debug('Background live update polling failed (likely CORS or offline):', err);
+    
+    // Fallback for offline/development/CORS restrictions: update the dashboard and graph using mock fluctuations
+    const mockDetail = window.MinehutMockData ? window.MinehutMockData.getServerDetailByName(name) : null;
+    if (mockDetail && mockDetail.server) {
+      const basePlayers = mockDetail.server.playerCount || 0;
+      const maxPlayers = mockDetail.server.maxPlayers || 10;
+      // Slight random fluctuation to keep the graph dynamic
+      const fluctuation = Math.floor(Math.random() * 3) - 1; // -1, 0, or +1
+      const newPlayers = Math.max(0, Math.min(basePlayers + fluctuation, maxPlayers));
+      mockDetail.server.playerCount = newPlayers;
+      
+      renderServerDetails(mockDetail.server);
+      addToHistory(newPlayers);
+      
+      // Retain resolved Minecraft UUID avatar if we have it
+      if (window.currentOwnerUUID) {
+        const avatarEl = document.querySelector('.owner-avatar');
+        if (avatarEl) avatarEl.src = `https://crafthead.net/avatar/${window.currentOwnerUUID}`;
+        const dashAvatarEl = document.querySelector('.dash-owner-avatar');
+        if (dashAvatarEl) dashAvatarEl.src = `https://crafthead.net/avatar/${window.currentOwnerUUID}`;
+      }
+    }
   }
 }
 
@@ -454,7 +486,19 @@ function renderServerDetails(server) {
   els.statUptime.textContent = isOnline ? 'Online' : 'Offline';
   els.statUptime.style.color = isOnline ? 'var(--accent-emerald)' : 'var(--text-muted)';
   
-  els.statSlots.textContent = `${server.playerCount} / ${server.maxPlayers || 10}`;
+  const maxPlayers = server.maxPlayers || 10;
+  const playerCount = server.playerCount || 0;
+  const percent = maxPlayers > 0 ? Math.min(Math.round((playerCount / maxPlayers) * 100), 100) : 0;
+  els.statSlots.textContent = `${playerCount} / ${maxPlayers}`;
+  
+  if (els.statSlotsPercent) {
+    els.statSlotsPercent.textContent = `${percent}%`;
+  }
+  if (els.statSlotsRing) {
+    const circumference = 175.93; // 2 * pi * r (r=28)
+    const offset = circumference - (percent / 100) * circumference;
+    els.statSlotsRing.style.strokeDashoffset = offset;
+  }
   els.statPlan.textContent = server.server_plan || 'FREE';
   els.statCredits.textContent = server.credits_per_day ? `${server.credits_per_day} c/d` : '0 c/d';
   els.statVersion.textContent = server.server_version_type || 'PAPER';
@@ -738,3 +782,249 @@ function showFallbackToast() {
     els.toast.classList.remove('show');
   }, 5000);
 }
+
+// Add a player count data point to history and enforce 2 minutes history limit (24 points at 5s intervals)
+function addToHistory(players) {
+  if (!window.playerHistory) {
+    window.playerHistory = [];
+  }
+  
+  window.playerHistory.push({
+    time: Date.now(),
+    players: players
+  });
+
+  // Limit to 2 minutes of history (120 seconds / 5 seconds interval = 24 points)
+  if (window.playerHistory.length > 24) {
+    window.playerHistory.shift();
+  }
+
+  // Redraw the line chart
+  drawPlayerChart();
+}
+
+// Draw the real-time line chart using Vanilla Canvas API with premium glowing styling
+function drawPlayerChart() {
+  const canvas = document.getElementById('player-chart');
+  if (!canvas) return;
+
+  const history = window.playerHistory || [];
+  const rect = canvas.getBoundingClientRect();
+  const width = rect.width;
+  const height = rect.height;
+
+  // Set up crisp high-DPI scaling
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, width, height);
+
+  if (history.length === 0) {
+    // Waiting state design
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.font = '14px var(--font-sans), sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Waiting for player updates...', width / 2, height / 2);
+    return;
+  }
+
+  // Margin spacing for axis labels
+  const paddingLeft = 40;
+  const paddingRight = 16;
+  const paddingTop = 20;
+  const paddingBottom = 30;
+
+  const chartWidth = width - paddingLeft - paddingRight;
+  const chartHeight = height - paddingTop - paddingBottom;
+
+  // Find min and max bounds for visual scaling
+  const playerCounts = history.map(h => h.players);
+  let minVal = Math.min(...playerCounts);
+  let maxVal = Math.max(...playerCounts);
+
+  // Pad flat-line metrics so they center cleanly
+  if (minVal === maxVal) {
+    if (minVal === 0) {
+      maxVal = 10;
+      minVal = 0;
+    } else {
+      const padding = Math.max(5, Math.ceil(minVal * 0.25));
+      maxVal = minVal + padding;
+      minVal = Math.max(0, minVal - padding);
+    }
+  } else {
+    // Standard visual padding buffer
+    const range = maxVal - minVal;
+    maxVal = Math.ceil(maxVal + range * 0.15);
+    minVal = Math.max(0, Math.floor(minVal - range * 0.15));
+  }
+
+  // Enforce a minimum scale range of at least 4 to prevent fractional/duplicate grid label ticks
+  if (maxVal - minVal < 4) {
+    minVal = Math.max(0, minVal - 2);
+    maxVal = minVal + 4;
+  }
+
+  // 1. Draw horizontal grid lines and Y-axis scale values
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.lineWidth = 1;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.font = '10px var(--font-mono), monospace';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+
+  const gridLines = 3; // 4 rows
+  for (let i = 0; i <= gridLines; i++) {
+    const val = minVal + (maxVal - minVal) * (i / gridLines);
+    const y = paddingTop + chartHeight * (1 - (i / gridLines));
+
+    ctx.beginPath();
+    ctx.moveTo(paddingLeft, y);
+    ctx.lineTo(width - paddingRight, y);
+    ctx.stroke();
+
+    ctx.fillText(Math.round(val), paddingLeft - 8, y);
+  }
+
+  // 2. Map history data points to coordinates
+  const points = [];
+  for (let i = 0; i < history.length; i++) {
+    const pt = history[i];
+    // Spread points relative to current history window size
+    const xRatio = history.length > 1 ? (i / (history.length - 1)) : 0.5;
+    const x = paddingLeft + xRatio * chartWidth;
+    
+    const yRatio = (pt.players - minVal) / (maxVal - minVal);
+    const y = paddingTop + chartHeight * (1 - yRatio);
+    
+    points.push({ x, y });
+  }
+
+  // 3. Draw area filled gradient under the curve
+  if (points.length > 1) {
+    const grad = ctx.createLinearGradient(0, paddingTop, 0, paddingTop + chartHeight);
+    grad.addColorStop(0, 'rgba(139, 92, 246, 0.22)'); // Translucent primary purple
+    grad.addColorStop(1, 'rgba(139, 92, 246, 0.00)'); // Fade to transparent
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, paddingTop + chartHeight);
+    ctx.lineTo(points[0].x, points[0].y);
+
+    // Smooth spline interpolation
+    const m01x = (points[0].x + points[1].x) / 2;
+    const m01y = (points[0].y + points[1].y) / 2;
+    ctx.lineTo(m01x, m01y);
+
+    for (let i = 1; i < points.length - 1; i++) {
+      const xc = (points[i].x + points[i + 1].x) / 2;
+      const yc = (points[i].y + points[i + 1].y) / 2;
+      ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+    }
+
+    ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+    ctx.lineTo(points[points.length - 1].x, paddingTop + chartHeight);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // 4. Draw curve line stroke with neon glow
+  if (points.length > 0) {
+    ctx.strokeStyle = '#a78bfa'; // Glow purple accent
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.shadowColor = 'rgba(139, 92, 246, 0.5)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetY = 1;
+
+    ctx.beginPath();
+    if (points.length === 1) {
+      ctx.arc(points[0].x, points[0].y, 1.5, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.moveTo(points[0].x, points[0].y);
+      
+      const m01x = (points[0].x + points[1].x) / 2;
+      const m01y = (points[0].y + points[1].y) / 2;
+      ctx.lineTo(m01x, m01y);
+
+      for (let i = 1; i < points.length - 1; i++) {
+        const xc = (points[i].x + points[i + 1].x) / 2;
+        const yc = (points[i].y + points[i + 1].y) / 2;
+        ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+      }
+
+      ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+      ctx.stroke();
+    }
+
+    // Reset shadow settings
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // 5. Draw point markers
+    points.forEach((pt, idx) => {
+      const isLast = idx === points.length - 1;
+      if (isLast) {
+        // Neon cyan pulse animation/halo for the latest updated value
+        ctx.fillStyle = 'rgba(34, 211, 238, 0.25)';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#22d3ee'; // bright cyan
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Tiny dots for historical nodes
+        ctx.fillStyle = '#a78bfa';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    // 6. Draw X-axis timestamps (align left, middle, right to prevent cluttering/wrapping)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.font = '9px var(--font-mono), monospace';
+
+    // First timestamp
+    ctx.textAlign = 'left';
+    const startStr = new Date(history[0].time).toLocaleTimeString(undefined, {
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+    });
+    ctx.fillText(startStr, paddingLeft, height - paddingBottom + 16);
+
+    // Last timestamp
+    if (history.length > 1) {
+      ctx.textAlign = 'right';
+      const endStr = new Date(history[history.length - 1].time).toLocaleTimeString(undefined, {
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+      });
+      ctx.fillText(endStr, width - paddingRight, height - paddingBottom + 16);
+    }
+
+    // Mid timestamp
+    if (history.length > 2) {
+      ctx.textAlign = 'center';
+      const midIdx = Math.floor(history.length / 2);
+      const midStr = new Date(history[midIdx].time).toLocaleTimeString(undefined, {
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+      });
+      ctx.fillText(midStr, points[midIdx].x, height - paddingBottom + 16);
+    }
+  }
+}
+
+// Redraw canvas on window resize to ensure responsiveness and crisp resolution
+window.addEventListener('resize', () => {
+  drawPlayerChart();
+});

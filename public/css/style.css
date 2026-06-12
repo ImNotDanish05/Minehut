@@ -1263,3 +1263,20 @@ header {
 .pagination-container.pagination-top {
   margin: 0;
 }
+
+/* Player History Real-time Chart Section */
+.player-history-section {
+  margin-top: 32px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 32px;
+}
+
+.chart-container-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 24px;
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+}
