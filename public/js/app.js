@@ -146,6 +146,10 @@ const state = {
     sort: 'players-desc',
     onlineOnly: true
   },
+  pagination: {
+    currentPage: 1,
+    pageSize: 10
+  },
   isOfflineMode: false
 };
 
@@ -162,9 +166,12 @@ const els = {
   platformSelect: document.getElementById('platform-select'),
   planSelect: document.getElementById('plan-select'),
   sortSelect: document.getElementById('sort-select'),
+  pageSizeSelect: document.getElementById('page-size-select'),
   onlineCheckbox: document.getElementById('online-checkbox'),
   serversGrid: document.getElementById('servers-grid'),
   resultsCountVal: document.getElementById('results-count-val'),
+  paginationControls: document.getElementById('pagination-controls'),
+  paginationControlsTop: document.getElementById('pagination-controls-top'),
   toast: document.getElementById('toast-notification'),
   toastTitle: document.getElementById('toast-title'),
   toastDesc: document.getElementById('toast-desc')
@@ -183,6 +190,7 @@ function setupEventListeners() {
   let searchTimeout;
   els.searchInput.addEventListener('input', (e) => {
     state.filters.query = e.target.value;
+    state.pagination.currentPage = 1; // Reset to page 1 on search change
     
     // Toggle clear button
     els.searchClearBtn.style.display = e.target.value ? 'block' : 'none';
@@ -197,6 +205,7 @@ function setupEventListeners() {
   els.searchClearBtn.addEventListener('click', () => {
     els.searchInput.value = '';
     state.filters.query = '';
+    state.pagination.currentPage = 1; // Reset to page 1
     els.searchClearBtn.style.display = 'none';
     renderFilteredServers();
   });
@@ -214,6 +223,7 @@ function setupEventListeners() {
     const category = pill.dataset.category;
     state.filters.category = category;
     els.categorySelect.value = category;
+    state.pagination.currentPage = 1; // Reset to page 1
 
     renderFilteredServers();
   });
@@ -221,6 +231,7 @@ function setupEventListeners() {
   // Filter dropdown updates
   els.categorySelect.addEventListener('change', (e) => {
     state.filters.category = e.target.value;
+    state.pagination.currentPage = 1; // Reset to page 1
     
     // Update active quick tag pill if exists
     els.quickTagsContainer.querySelectorAll('.quick-tag').forEach(tag => {
@@ -236,21 +247,31 @@ function setupEventListeners() {
 
   els.platformSelect.addEventListener('change', (e) => {
     state.filters.platform = e.target.value;
+    state.pagination.currentPage = 1; // Reset to page 1
     renderFilteredServers();
   });
 
   els.planSelect.addEventListener('change', (e) => {
     state.filters.plan = e.target.value;
+    state.pagination.currentPage = 1; // Reset to page 1
     renderFilteredServers();
   });
 
   els.sortSelect.addEventListener('change', (e) => {
     state.filters.sort = e.target.value;
+    state.pagination.currentPage = 1; // Reset to page 1
+    renderFilteredServers();
+  });
+
+  els.pageSizeSelect.addEventListener('change', (e) => {
+    state.pagination.pageSize = parseInt(e.target.value, 10) || 10;
+    state.pagination.currentPage = 1; // Reset to page 1
     renderFilteredServers();
   });
 
   els.onlineCheckbox.addEventListener('change', (e) => {
     state.filters.onlineOnly = e.target.checked;
+    state.pagination.currentPage = 1; // Reset to page 1
     renderFilteredServers();
   });
 }
@@ -370,7 +391,7 @@ function populateFilterDropdowns() {
   });
 }
 
-// Handle filters, sorts and rendering
+// Handle filters, sorts, pagination, and rendering
 function renderFilteredServers() {
   let filtered = [...state.servers];
 
@@ -444,20 +465,157 @@ function renderFilteredServers() {
   // Update counter
   els.resultsCountVal.textContent = filtered.length;
 
+  // 7. Pagination Logic
+  const totalItems = filtered.length;
+  const pageSize = state.pagination.pageSize;
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+
+  // Make sure current page is in bounds
+  if (state.pagination.currentPage > totalPages) {
+    state.pagination.currentPage = totalPages;
+  }
+  if (state.pagination.currentPage < 1) {
+    state.pagination.currentPage = 1;
+  }
+
+  const startIndex = (state.pagination.currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const pageItems = filtered.slice(startIndex, endIndex);
+
   // Render to DOM
-  if (filtered.length === 0) {
+  if (pageItems.length === 0) {
     els.serversGrid.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 48px; border: 1px dashed var(--border-color); border-radius: var(--border-radius-lg); background: var(--bg-card);">
         <p style="font-size: 18px; font-weight: 600; color: var(--text-secondary);">No servers found matching your criteria</p>
         <p style="color: var(--text-muted); font-size: 14px; margin-top: 8px;">Try clearing filters or search terms.</p>
       </div>
     `;
+    if (els.paginationControls) els.paginationControls.innerHTML = '';
+    if (els.paginationControlsTop) els.paginationControlsTop.innerHTML = '';
     return;
   }
 
   els.serversGrid.innerHTML = '';
-  filtered.forEach(server => {
+  pageItems.forEach(server => {
     els.serversGrid.appendChild(createServerCard(server));
+  });
+
+  // Render pagination buttons
+  renderPaginationControls(totalPages);
+}
+
+// Render dynamic pagination buttons
+function renderPaginationControls(totalPages) {
+  const containers = [els.paginationControls, els.paginationControlsTop];
+  
+  containers.forEach(container => {
+    if (!container) return;
+    container.innerHTML = '';
+    
+    // If only 1 page, don't show pagination controls
+    if (totalPages <= 1) {
+      return;
+    }
+    
+    const curPage = state.pagination.currentPage;
+    
+    // 1. Previous button
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'pagination-btn';
+    prevBtn.disabled = curPage === 1;
+    prevBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      Prev
+    `;
+    prevBtn.addEventListener('click', () => {
+      if (state.pagination.currentPage > 1) {
+        state.pagination.currentPage--;
+        renderFilteredServers();
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+      }
+    });
+    container.appendChild(prevBtn);
+    
+    // 2. Page number buttons
+    const maxPagesToShow = 5;
+    let startPage = Math.max(1, curPage - 2);
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+    
+    if (endPage - startPage < maxPagesToShow - 1) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+    
+    // Ellipsis before if startPage > 1
+    if (startPage > 1) {
+      const pageBtn = document.createElement('button');
+      pageBtn.className = 'pagination-btn';
+      pageBtn.textContent = '1';
+      pageBtn.addEventListener('click', () => {
+        state.pagination.currentPage = 1;
+        renderFilteredServers();
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+      });
+      container.appendChild(pageBtn);
+      
+      if (startPage > 2) {
+        const ellipsis = document.createElement('span');
+        ellipsis.textContent = '...';
+        ellipsis.style.color = 'var(--text-muted)';
+        ellipsis.style.padding = '0 8px';
+        container.appendChild(ellipsis);
+      }
+    }
+    
+    // Individual page buttons
+    for (let i = startPage; i <= endPage; i++) {
+      const pageBtn = document.createElement('button');
+      pageBtn.className = `pagination-btn ${i === curPage ? 'active' : ''}`;
+      pageBtn.textContent = i;
+      pageBtn.addEventListener('click', () => {
+        state.pagination.currentPage = i;
+        renderFilteredServers();
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+      });
+      container.appendChild(pageBtn);
+    }
+    
+    // Ellipsis after if endPage < totalPages
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        const ellipsis = document.createElement('span');
+        ellipsis.textContent = '...';
+        ellipsis.style.color = 'var(--text-muted)';
+        ellipsis.style.padding = '0 8px';
+        container.appendChild(ellipsis);
+      }
+      
+      const pageBtn = document.createElement('button');
+      pageBtn.className = 'pagination-btn';
+      pageBtn.textContent = totalPages;
+      pageBtn.addEventListener('click', () => {
+        state.pagination.currentPage = totalPages;
+        renderFilteredServers();
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+      });
+      container.appendChild(pageBtn);
+    }
+    
+    // 3. Next button
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'pagination-btn';
+    nextBtn.disabled = curPage === totalPages;
+    nextBtn.innerHTML = `
+      Next
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    `;
+    nextBtn.addEventListener('click', () => {
+      if (state.pagination.currentPage < totalPages) {
+        state.pagination.currentPage++;
+        renderFilteredServers();
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+      }
+    });
+    container.appendChild(nextBtn);
   });
 }
 

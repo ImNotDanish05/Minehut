@@ -318,11 +318,39 @@ header {
   box-shadow: 0 0 0 2px var(--accent-purple-glow);
 }
 
-.checkbox-group {
+.controls-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.controls-footer-left {
   display: flex;
   align-items: center;
+}
+
+.controls-footer-right {
+  display: flex;
+  align-items: center;
+}
+
+.page-size-group {
+  flex-direction: row !important;
+  align-items: center;
   gap: 12px;
-  height: 46px; /* Align with select heights */
+}
+
+.page-size-group .filter-label {
+  white-space: nowrap;
+}
+
+.page-size-group .custom-select {
+  width: 150px;
 }
 
 .custom-checkbox {
@@ -1024,6 +1052,19 @@ header {
   .filters-row {
     grid-template-columns: 1fr;
   }
+  .controls-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .page-size-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .page-size-group .custom-select {
+    width: 100%;
+    max-width: 180px;
+  }
   .servers-grid {
     grid-template-columns: 1fr;
   }
@@ -1046,4 +1087,56 @@ header {
   .detail-server-name {
     font-size: 24px;
   }
+}
+
+/* Pagination Styling */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 40px 0 60px 0;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+}
+
+.pagination-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 10px 16px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 14px;
+  transition: var(--transition-smooth);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  border-color: var(--accent-purple);
+  color: var(--text-primary);
+  background: rgba(139, 92, 246, 0.1);
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.1);
+}
+
+.pagination-btn.active {
+  background: var(--accent-purple);
+  border-color: var(--accent-purple);
+  color: #fff;
+  box-shadow: 0 0 20px var(--accent-purple-glow);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Top Pagination Specific Overrides */
+.pagination-container.pagination-top {
+  margin: 0;
 }
