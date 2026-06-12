@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minehut Server Search Engine - Discover Premium Minecraft Servers</title>
+  <meta name="description" content="Search, filter, and discover the best Minecraft servers on the Minehut network. Live statistics, advanced filtering, and instant connection details.">
+  <link rel="stylesheet" href="public/css/style.css">
+  <link rel="shortcut icon" href="https://minehut.com/favicon.ico" type="image/x-icon">
+</head>
+<body>
+
+  <!-- Top Sticky Header -->
+  <header>
+    <div class="container header-content">
+      <a href="index.html" class="logo" id="header-logo">
+        <div class="logo-icon">M</div>
+        <div class="logo-text">Minehut Search</div>
+      </a>
+      
+      <!-- Network Stats Dashboard -->
+      <div class="network-stats" id="network-stats-panel">
+        <div class="stat-item">
+          <span class="stat-label">Online Players</span>
+          <span class="stat-value highlight" id="online-players">...</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Active Servers</span>
+          <span class="stat-value" id="active-servers">...</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Registered Users</span>
+          <span class="stat-value" id="total-users">...</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">RAM Allocated</span>
+          <span class="stat-value" id="allocated-ram">...</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero / Title -->
+    <section class="hero-section">
+      <h1 class="hero-title">Find Your Next <span>Minehut Server</span></h1>
+      <p class="hero-subtitle">Instantly browse through thousands of community-hosted Minecraft servers. Filter by category, player count, platform, and online status.</p>
+      
+      <!-- Search Input Container -->
+      <div class="search-wrapper">
+        <div class="search-container">
+          <input type="text" id="search-input" class="search-input" placeholder="Search servers by name, author, categories, or keywords..." autocomplete="off">
+          <button class="search-icon-btn" id="search-clear-btn" style="display: none;" title="Clear search">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+          <div class="search-icon-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Tag Filter Pills -->
+      <div class="quick-tags" id="quick-tags-container">
+        <span class="quick-tag active" data-category="all">All Servers</span>
+        <span class="quick-tag" data-category="pvp">PvP</span>
+        <span class="quick-tag" data-category="smp">SMP</span>
+        <span class="quick-tag" data-category="box">Box PvP</span>
+        <span class="quick-tag" data-category="lifesteal">Lifesteal</span>
+        <span class="quick-tag" data-category="gens">Gens</span>
+        <span class="quick-tag" data-category="minigames">Minigames</span>
+        <span class="quick-tag" data-category="skyblock">Skyblock</span>
+      </div>
+    </section>
+
+    <!-- Filters and Sorting Panel -->
+    <section class="controls-panel">
+      <div class="filters-row">
+        <!-- Category Dropdown -->
+        <div class="filter-group">
+          <label class="filter-label" for="category-select">Category</label>
+          <select id="category-select" class="custom-select">
+            <option value="all">All Categories</option>
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <!-- Platform Dropdown -->
+        <div class="filter-group">
+          <label class="filter-label" for="platform-select">Platform</label>
+          <select id="platform-select" class="custom-select">
+            <option value="all">All Platforms</option>
+            <option value="java">Java Edition</option>
+            <option value="bedrock">Bedrock Edition</option>
+          </select>
+        </div>
+
+        <!-- Plan Dropdown -->
+        <div class="filter-group">
+          <label class="filter-label" for="plan-select">Server Plan</label>
+          <select id="plan-select" class="custom-select">
+            <option value="all">All Plans</option>
+            <option value="free">Free Plans</option>
+            <option value="paid">Paid Plans (Pro/Ultra)</option>
+            <option value="external">External Server</option>
+          </select>
+        </div>
+
+        <!-- Sorting -->
+        <div class="filter-group">
+          <label class="filter-label" for="sort-select">Sort By</label>
+          <select id="sort-select" class="custom-select">
+            <option value="players-desc">Players: High to Low</option>
+            <option value="players-asc">Players: Low to High</option>
+            <option value="name-asc">Name: A to Z</option>
+            <option value="name-desc">Name: Z to A</option>
+          </select>
+        </div>
+
+        <!-- Connectable / Online Toggle -->
+        <div class="filter-group checkbox-group">
+          <label class="custom-checkbox" id="online-checkbox-label">
+            <input type="checkbox" id="online-checkbox" checked>
+            <span class="checkmark"></span>
+            Show Online Only
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results Overview -->
+    <div class="results-summary">
+      <div class="results-count" id="results-count-container">
+        Found <span id="results-count-val">0</span> servers
+      </div>
+    </div>
+
+    <!-- Server Cards Grid -->
+    <section class="servers-grid" id="servers-grid">
+      <!-- Loading skeletons (initial state) -->
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </section>
+  </main>
+
+  <!-- Global Footer -->
+  <footer style="margin-top: 60px; padding: 40px 0; border-top: 1px solid var(--border-color); text-align: center; color: var(--text-muted); font-size: 14px;">
+    <div class="container">
+      <p>&copy; 2026 Minehut Search Engine. Powered by the Minehut Public API.</p>
+      <p style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">This search tool is unaffiliated with Minehut, Minecraft, or Mojang Synergies AB.</p>
+    </div>
+  </footer>
+
+  <!-- Toast Toast Notification (CORS/Offline Fallback Info) -->
+  <div class="toast" id="toast-notification">
+    <div class="toast-icon">!</div>
+    <div class="toast-content">
+      <div class="toast-title" id="toast-title">CORS Fallback Active</div>
+      <div class="toast-desc" id="toast-desc">Loaded premium mock database due to local browser CORS limitations.</div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="public/js/mock_data.js"></script>
+  <script src="public/js/app.js"></script>
+</body>
+</html>

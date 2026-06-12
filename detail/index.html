@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Details - Minehut Server Search Engine</title>
+  <meta name="description" content="Detailed status page for Minehut Minecraft servers, including player counts, categories, plugins list, and direct connection IP.">
+  <link rel="stylesheet" href="../public/css/style.css">
+  <link rel="shortcut icon" href="https://minehut.com/favicon.ico" type="image/x-icon">
+</head>
+<body>
+
+  <!-- Top Sticky Header -->
+  <header>
+    <div class="container header-content">
+      <a href="../index.html" class="logo" id="header-logo">
+        <div class="logo-icon">M</div>
+        <div class="logo-text">Minehut Search</div>
+      </a>
+      
+      <!-- Tiny Nav indicator -->
+      <a href="../index.html" class="back-button" style="margin-bottom: 0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Back to Search
+      </a>
+    </div>
+  </header>
+
+  <main class="detail-container">
+    <!-- Server Detailed Presentation Card -->
+    <article class="detail-card" id="detail-card">
+      
+      <!-- Top dynamic banner (filled dynamically) -->
+      <div class="detail-banner" id="server-banner">
+        <div class="detail-banner-tint"></div>
+        <div class="detail-header-block">
+          <div class="detail-icon" id="server-icon">🎮</div>
+          <div class="detail-title-info">
+            <h1 class="detail-server-name" id="server-name">Loading Server Details...</h1>
+            <div class="server-meta" style="margin-top: 8px;" id="server-meta-tags">
+              <!-- Dynamically populated badges -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main info content -->
+      <div class="detail-card-body">
+        
+        <!-- Copy IP section -->
+        <section class="copy-ip-section">
+          <div class="copy-ip-info">
+            <span class="copy-ip-title">Server Server Address</span>
+            <span class="copy-ip-address" id="server-ip">...</span>
+          </div>
+          <button class="btn-copy" id="btn-copy-ip">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="copy-icon"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span id="copy-text">Copy Server IP</span>
+          </button>
+        </section>
+
+        <!-- Message of the day (MOTD) Container -->
+        <section>
+          <h2 class="detail-motd-title">Message of the Day (MOTD)</h2>
+          <div class="detail-motd-box" id="server-motd">
+            <!-- Parsed MOTD -->
+          </div>
+        </section>
+
+        <!-- Dashboard Stats Grid -->
+        <section class="detail-dashboard-grid" id="stats-dashboard">
+          <div class="dash-card">
+            <span class="dash-label">Server Uptime</span>
+            <span class="dash-value" id="stat-uptime">...</span>
+          </div>
+          <div class="dash-card">
+            <span class="dash-label">Total Player Slots</span>
+            <span class="dash-value" id="stat-slots">...</span>
+          </div>
+          <div class="dash-card">
+            <span class="dash-label">Minehut Plan</span>
+            <span class="dash-value" id="stat-plan">...</span>
+          </div>
+          <div class="dash-card">
+            <span class="dash-label">Credits Per Day</span>
+            <span class="dash-value" id="stat-credits">...</span>
+          </div>
+          <div class="dash-card">
+            <span class="dash-label">Server Version</span>
+            <span class="dash-value" id="stat-version">...</span>
+          </div>
+          <div class="dash-card">
+            <span class="dash-label">Created At</span>
+            <span class="dash-value" id="stat-created">...</span>
+          </div>
+          <div class="dash-card">
+            <span class="dash-label">Total Unique Joins</span>
+            <span class="dash-value" id="stat-joins">...</span>
+          </div>
+          <div class="dash-card">
+            <span class="dash-label">Uptime Tier</span>
+            <span class="dash-value" id="stat-daily-uptime">...</span>
+          </div>
+        </section>
+
+        <!-- Categories tags list -->
+        <section class="detail-categories-section">
+          <h2 class="detail-categories-label">Categories</h2>
+          <div class="detail-categories-list" id="detail-categories">
+            <!-- Dynamic tags -->
+          </div>
+        </section>
+
+        <!-- Installed Minecraft Plugins list -->
+        <section class="plugins-section" id="plugins-section">
+          <h2 class="detail-categories-label">Installed Plugins</h2>
+          <div class="plugins-list" id="plugins-list">
+            <!-- Dynamic plugin tags -->
+          </div>
+        </section>
+
+      </div>
+    </article>
+  </main>
+
+  <!-- Global Footer -->
+  <footer style="margin-top: 60px; padding: 40px 0; border-top: 1px solid var(--border-color); text-align: center; color: var(--text-muted); font-size: 14px;">
+    <div class="container">
+      <p>&copy; 2026 Minehut Search Engine. Powered by the Minehut Public API.</p>
+    </div>
+  </footer>
+
+  <!-- Toast notifications -->
+  <div class="toast" id="toast-notification">
+    <div class="toast-icon">✓</div>
+    <div class="toast-content">
+      <div class="toast-title" id="toast-title">IP Copied!</div>
+      <div class="toast-desc" id="toast-desc">IP address copied to clipboard. Ready to join Minecraft!</div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../public/js/mock_data.js"></script>
+  <script src="../public/js/detail.js"></script>
+</body>
+</html>
