@@ -500,7 +500,7 @@ function renderServerDetails(server) {
     els.statSlotsRing.style.strokeDashoffset = offset;
   }
   els.statPlan.textContent = server.server_plan || 'FREE';
-  els.statCredits.textContent = server.credits_per_day ? `${server.credits_per_day} c/d` : '0 c/d';
+  els.statCredits.textContent = server.credits_per_day ? `${Number(server.credits_per_day).toFixed(1)} Credits / Day` : '0 Credits / Day';
   els.statVersion.textContent = server.server_version_type || 'PAPER';
   
   // Format Date
